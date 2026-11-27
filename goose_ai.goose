@@ -1,4 +1,4 @@
-// goose_ai.goose — v1.8 with Multi-Turn Memory + /save, /load, /sessions, /delete, /export & /help
+// goose_ai.goose — v1.9 with Smarter Diagnostics Dispatch + Multi-Turn Memory
 extern fn load_system_prompt();
 extern fn handle_help_cmd();
 extern fn handle_system_cmd();
@@ -20,21 +20,26 @@ extern fn read_user_prompt() -> i32;
 extern fn is_quit_cmd() -> i32;
 extern fn is_health_cmd() -> i32;
 extern fn is_evolve_cmd() -> i32;
-extern fn input_equals(cmd: const u8*) -> i32;
-extern fn prepare_diag_prompt(diag_type: const u8*, question: const u8*);
+extern fn input_starts_with(prefix: const u8[:]) -> i32;
+extern fn prepare_file_prompt(question: const u8[:]);
+extern fn prepare_exec_prompt(question: const u8[:]);
+extern fn save_last_reply(path: const u8[:]);
+extern fn input_equals(cmd: const u8[:]) -> i32;
+extern fn prepare_diag_prompt(diag_type: const u8[:], question: const u8[:]);
 extern fn build_health_prompt();
-extern fn query_local_llm(endpoint: const u8*, model_name: const u8*);
-extern fn self_evolve(endpoint: const u8*, model_name: const u8*);
+extern fn query_local_llm(endpoint: const u8[:], model_name: const u8[:]);
+extern fn self_evolve(endpoint: const u8[:], model_name: const u8[:]);
 
 fn main() {
     load_system_prompt();
 
     print("\x1b[1;35m=========================================================================================================\x1b[0m");
-    print("\x1b[1;37m  GOOSE-AI v1.8  |  Self-Evolving Zero-Heap Assistant (Type /help for all commands)\x1b[0m");
-    print("\x1b[2m  Commands: /help | /system | /save | /load | /sessions | /delete | /export | /clear | /health | /quit\x1b[0m");
+    print("\x1b[1;37m  GOOSE-AI v1.9  |  Self-Evolving Zero-Heap Assistant (Type /help for all commands)\x1b[0m");
+    print("\x1b[2m  Meta: /help /system /save /load /sessions /delete /export /clear /health /evolve /quit\x1b[0m");
+    print("\x1b[2m  Diag: /gpu /temps /ecc /top /uptime\x1b[0m");
     print("\x1b[1;35m=========================================================================================================\x1b[0m");
 
-    let endpoint = "http://127.0.0.1:8080/v1/chat/completions\0";
+    let endpoint = "http://127.0.0.1:9931/v1/chat/completions\0";
     let model = "local-model\0";
 
     while true {
@@ -85,13 +90,28 @@ fn main() {
             print("\x1b[33m[Gathering CUDA + RAM + EDAC telemetry...]\x1b[0m");
             build_health_prompt();
         }
+
+        // Smarter diagnostics router: each probe selects the exact telemetry
+        // source and frames a focused question for the local model.
         if input_equals("/gpu\0") == 1 {
-            print("\x1b[33m[Checking CUDA status...]\x1b[0m");
-            prepare_diag_prompt("gpu\0", "Check my VRAM usage, temperature, and power draw:\0");
+            print("\x1b[33m[Checking CUDA status: VRAM, temperature, power draw...]\x1b[0m");
+            prepare_diag_prompt("gpu\0", "Check my VRAM usage, GPU temperature, utilization, and power draw. Flag any anomalies:\0");
+        }
+        if input_equals("/temps\0") == 1 {
+            print("\x1b[33m[Reading thermal sensors...]\x1b[0m");
+            prepare_diag_prompt("temps\0", "Report CPU/GPU temperatures and identify any thermal throttling or unsafe zones:\0");
+        }
+        if input_equals("/ecc\0") == 1 {
+            print("\x1b[33m[Querying EDAC / ECC error counters...]\x1b[0m");
+            prepare_diag_prompt("ecc\0", "Check ECC memory errors and GPU memory health. Are correctable or uncorrectable errors present?\0");
         }
         if input_equals("/top\0") == 1 {
             print("\x1b[33m[Checking top RAM-consuming processes...]\x1b[0m");
-            prepare_diag_prompt("top\0", "Which processes are using the most physical RAM right now?\0");
+            prepare_diag_prompt("top\0", "Which processes are using the most physical RAM right now? Highlight leaks or runaway consumers:\0");
+        }
+        if input_equals("/uptime\0") == 1 {
+            print("\x1b[33m[Checking uptime, load averages, and reboot history...]\x1b[0m");
+            prepare_diag_prompt("uptime\0", "Report system uptime, load averages, and any recent reboots or instability:\0");
         }
 
         query_local_llm(endpoint, model);
