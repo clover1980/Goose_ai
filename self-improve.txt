@@ -1,0 +1,135 @@
+=========================================================================================================
+  GOOSE-AI v1.8  |  Self-Evolving Zero-Heap Assistant (Type /help for all commands)
+  Commands: /help | /system | /save | /load | /sessions | /delete | /export | /clear | /health | /quit
+=========================================================================================================
+
+You (0/16 msgs) > /evolve smarter
+[Evolving] Asking model to rewrite goose_ai.goose...
+
+// goose_ai.goose — v1.9 with Smarter Diagnostics Dispatch + Multi-Turn Memory
+extern fn load_system_prompt();
+extern fn handle_help_cmd();
+extern fn handle_system_cmd();
+extern fn handle_save_cmd();
+extern fn handle_load_cmd();
+extern fn handle_sessions_cmd();
+extern fn handle_delete_cmd();
+extern fn handle_export_cmd();
+extern fn clear_history();
+extern fn is_help_cmd() -> i32;
+extern fn is_system_cmd() -> i32;
+extern fn is_save_cmd() -> i32;
+extern fn is_load_cmd() -> i32;
+extern fn is_sessions_cmd() -> i32;
+extern fn is_delete_cmd() -> i32;
+extern fn is_export_cmd() -> i32;
+extern fn is_clear_cmd() -> i32;
+extern fn read_user_prompt() -> i32;
+extern fn is_quit_cmd() -> i32;
+extern fn is_health_cmd() -> i32;
+extern fn is_evolve_cmd() -> i32;
+extern fn input_equals(cmd: const u8[:]) -> i32;
+extern fn prepare_diag_prompt(diag_type: const u8[:], question: const u8[:]);
+extern fn build_health_prompt();
+extern fn query_local_llm(endpoint: const u8[:], model_name: const u8[:]);
+extern fn self_evolve(endpoint: const u8[:], model_name: const u8[:]);
+
+fn main() {
+    load_system_prompt();
+
+    print("\x1b[1;35m=========================================================================================================\x1b[0m");
+    print("\x1b[1;37m  GOOSE-AI v1.9  |  Self-Evolving Zero-Heap Assistant (Type /help for all commands)\x1b[0m");
+    print("\x1b[2m  Meta: /help /system /save /load /sessions /delete /export /clear /health /evolve /quit\x1b[0m");
+    print("\x1b[2m  Diag: /gpu /temps /ecc /top /uptime\x1b[0m");
+    print("\x1b[1;35m=========================================================================================================\x1b[0m");
+
+    let endpoint = "http://127.0.0.1:9931/v1/chat/completions\0";
+    let model = "local-model\0";
+
+    while true {
+        if read_user_prompt() == 0 {
+            break;
+        }
+        if is_quit_cmd() == 1 {
+            print("\x1b[36mShutting down Goose-AI.\x1b[0m");
+            break;
+        }
+        if is_help_cmd() == 1 {
+            handle_help_cmd();
+            continue;
+        }
+        if is_sessions_cmd() == 1 {
+            handle_sessions_cmd();
+            continue;
+        }
+        if is_export_cmd() == 1 {
+            handle_export_cmd();
+            continue;
+        }
+        if is_delete_cmd() == 1 {
+            handle_delete_cmd();
+            continue;
+        }
+        if is_save_cmd() == 1 {
+            handle_save_cmd();
+            continue;
+        }
+        if is_load_cmd() == 1 {
+            handle_load_cmd();
+            continue;
+        }
+        if is_clear_cmd() == 1 {
+            clear_history();
+            continue;
+        }
+        if is_system_cmd() == 1 {
+            handle_system_cmd();
+            continue;
+        }
+        if is_evolve_cmd() == 1 {
+            self_evolve(endpoint, model);
+            continue;
+        }
+        if is_health_cmd() == 1 {
+            print("\x1b[33m[Gathering CUDA + RAM + EDAC telemetry...]\x1b[0m");
+            build_health_prompt();
+        }
+
+        // Smarter diagnostics router: each probe selects the exact telemetry
+        // source and frames a focused question for the local model.
+        if input_equals("/gpu\0") == 1 {
+            print("\x1b[33m[Checking CUDA status: VRAM, temperature, power draw...]\x1b[0m");
+            prepare_diag_prompt("gpu\0", "Check my VRAM usage, GPU temperature, utilization, and power draw. Flag any anomalies:\0");
+        }
+        if input_equals("/temps\0") == 1 {
+            print("\x1b[33m[Reading thermal sensors...]\x1b[0m");
+            prepare_diag_prompt("temps\0", "Report CPU/GPU temperatures and identify any thermal throttling or unsafe zones:\0");
+        }
+        if input_equals("/ecc\0") == 1 {
+            print("\x1b[33m[Querying EDAC / ECC error counters...]\x1b[0m");
+            prepare_diag_prompt("ecc\0", "Check ECC memory errors and GPU memory health. Are correctable or uncorrectable errors present?\0");
+        }
+        if input_equals("/top\0") == 1 {
+            print("\x1b[33m[Checking top RAM-consuming processes...]\x1b[0m");
+            prepare_diag_prompt("top\0", "Which processes are using the most physical RAM right now? Highlight leaks or runaway consumers:\0");
+        }
+        if input_equals("/uptime\0") == 1 {
+            print("\x1b[33m[Checking uptime, load averages, and reboot history...]\x1b[0m");
+            prepare_diag_prompt("uptime\0", "Report system uptime, load averages, and any recent reboots or instability:\0");
+        }
+
+        query_local_llm(endpoint, model);
+    }
+}
+
+[Compiling] Verifying candidate build with Goose + GCC -O3...
+[Success] Compilation passed! Saving context, backing up source & hot-swapping...
+[Hot-Swap Complete] Restored 0 messages from pre-evolve session.
+=========================================================================================================
+  GOOSE-AI v1.9  |  Self-Evolving Zero-Heap Assistant (Type /help for all commands)
+  Meta: /help /system /save /load /sessions /delete /export /clear /health /evolve /quit
+  Diag: /gpu /temps /ecc /top /uptime
+=========================================================================================================
+
+You (0/16 msgs) > /quit
+Shutting down Goose-AI.
