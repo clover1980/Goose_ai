@@ -397,22 +397,121 @@ return (strcmp(g_input_buf, "/clear") == 0);
 int is_health_cmd(void) {
 return (strcmp(g_input_buf, "/health") == 0);
 }
+// Update is_evolve_cmd() to accept bare "/evolve" (3-branch tree) OR "/evolve <goal>"
 int is_evolve_cmd(void) {
-return (strncmp(g_input_buf, "/evolve ", 8) == 0);
+    return (strcmp(g_input_buf, "/evolve") == 0 || strncmp(g_input_buf, "/evolve ", 8) == 0);
 }
+
+int is_revert_cmd(void) {
+    return (strcmp(g_input_buf, "/revert") == 0);
+}
+
+void revert_evolve(void) {
+    const char *home = getenv("HOME");
+    if (home) chdir(home);
+    if (access("goose_ai.goose.bak", F_OK) != 0) {
+        printf("\x1b[1;31m[Revert Error] No goose_ai.goose.bak backup found.\x1b[0m\n");
+        return;
+    }
+    printf("\x1b[1;33m[Reverting] Restoring goose_ai.goose.bak and recompiling...\x1b[0m\n");
+    int status = system("cp goose_ai.goose.bak goose_ai.goose && goose --standalone -o goose_ai_prev.c goose_ai.goose && gcc -O3 -c goose_ai_prev.c -o goose_ai_prev.o && gcc -O3 goose_ai_prev.o ai_bridge.o -lcurl -lm -lpthread -o ./goose_ai_bin");
+    if (status != 0) {
+        printf("\x1b[1;31m[Revert Failed] Compilation error on backup.\x1b[0m\n");
+        return;
+    }
+    save_session_file("hotswap", 1);
+    char *args[] = {"./goose_ai_bin", NULL};
+    execv("./goose_ai_bin", args);
+}
+
+static void pick_three_branches(sl_u8 ep_sl, sl_u8 mod_sl) {
+    const char *home = getenv("HOME");
+    if (home) chdir(home);
+
+    char src_code[32768] = {0};
+    FILE *f = fopen("goose_ai.goose", "r");
+    if (!f) {
+        printf("\x1b[1;31m[Evolve Error] Cannot find ~/goose_ai.goose.\x1b[0m\n");
+        g_input_buf[0] = '\0';
+        return;
+    }
+    size_t bytes_read = fread(src_code, 1, sizeof(src_code) - 1, f);
+    src_code[bytes_read] = '\0';
+    fclose(f);
+
+    snprintf(g_input_buf, sizeof(g_input_buf),
+        "Analyze my current Goose assistant source code:\n\n%s\n\n"
+        "Propose 3 distinct, creative, compact self-improvement branches (new slash commands, workflows, or smart routing) using ONLY existing C FFI helpers.\n"
+        "Available C helpers: input_equals, input_starts_with, prepare_diag_prompt(\"gpu\"|\"temps\"|\"ecc\"|\"top\"|\"uptime\", q), prepare_file_prompt, prepare_exec_prompt, save_last_reply.\n"
+        "CRITICAL: Output ONLY 3 numbered lines (1. ..., 2. ..., 3. ...). Keep each idea under 15 words and focused on keeping goose_ai.goose small. No <think> tags or extra text.",
+        src_code);
+
+    printf("\x1b[1;35m[AI Tree] Growing 3 random evolutionary branches...\x1b[0m\n\n");
+    g_evolve_len = 0;
+    g_evolve_code[0] = '\0';
+    g_capture_mode = 1;
+    query_local_llm(ep_sl, mod_sl);
+    g_capture_mode = 0;
+
+    char *p = g_evolve_code;
+    char *think_end = strstr(p, "</think>");
+    if (think_end) p = think_end + 8;
+
+    static char branches[3][256];
+    memset(branches, 0, sizeof(branches));
+    int count = 0;
+
+    while (*p && count < 3) {
+        while (*p == ' ' || *p == '\n' || *p == '\r' || *p == '\t') p++;
+        if (*p >= '1' && *p <= '9' && (p == '.' || p == ')')) {
+            p += 2;
+            while (*p == ' ') p++;
+            int j = 0;
+            while (*p && *p != '\n' && *p != '\r' && j < 250) {
+                branches[count][j++] = *p++;
+            }
+            branches[count][j] = '\0';
+            count++;
+        }
+        while (*p && *p != '\n') p++;
+    }
+
+    if (count == 0) {
+        printf("\n\x1b[1;31m[AI Tree] Could not parse branches from model output.\x1b[0m\n");
+        g_input_buf[0] = '\0';
+        return;
+    }
+
+    printf("\n\x1b[1;33mSelect a branch to grow (1-%d) or 0 to cancel > \x1b[0m", count);
+    fflush(stdout);
+    char choice_buf[32] = {0};
+    if (!fgets(choice_buf, sizeof(choice_buf), stdin)) {
+        g_input_buf[0] = '\0';
+        return;
+    }
+    int choice = atoi(choice_buf);
+    if (choice < 1 || choice > count) {
+        printf("\x1b[36m[AI Tree] Branch growth cancelled.\x1b[0m\n");
+        g_input_buf[0] = '\0';
+        return;
+    }
+
+    snprintf(g_input_buf, sizeof(g_input_buf), "/evolve %s (keep goose_ai.goose compact)", branches[choice - 1]);
+}
+
 int is_system_cmd(void) {
 return (strcmp(g_input_buf, "/system") == 0 || strncmp(g_input_buf, "/system ", 8) == 0);
 }
 
 int input_starts_with(sl_u8 prefix_sl) {
-    char prefix;
+    char prefix[128];
     sl_to_cstr(prefix_sl, prefix, sizeof(prefix));
     size_t len = strlen(prefix);
     return (strncmp(g_input_buf, prefix, len) == 0) ? 1 : 0;
 }
 
 void prepare_file_prompt(sl_u8 q_sl) {
-    char question;
+    char question[1024];
     sl_to_cstr(q_sl, question, sizeof(question));
     const char *path = strchr(g_input_buf, ' ');
     if (!path) {
@@ -433,7 +532,7 @@ void prepare_file_prompt(sl_u8 q_sl) {
 }
 
 void prepare_exec_prompt(sl_u8 q_sl) {
-    char question;
+    char question[1024];
     sl_to_cstr(q_sl, question, sizeof(question));
     const char *cmd = strchr(g_input_buf, ' ');
     if (!cmd) {
@@ -454,7 +553,7 @@ void prepare_exec_prompt(sl_u8 q_sl) {
 }
 
 void save_last_reply(sl_u8 path_sl) {
-    char path;
+    char path[512];
     sl_to_cstr(path_sl, path, sizeof(path));
     if (g_reply_len == 0) {
         printf("\x1b[1;33m[Save Skipped]\x1b[0m No assistant reply in buffer yet.\n");
@@ -634,6 +733,10 @@ void self_evolve(sl_u8 ep_sl, sl_u8 mod_sl) {
     char endpoint[512], model_name[256];
     sl_to_cstr(ep_sl, endpoint, sizeof(endpoint));
     sl_to_cstr(mod_sl, model_name, sizeof(model_name));
+    if (strcmp(g_input_buf, "/evolve") == 0) {
+        pick_three_branches(ep_sl, mod_sl);
+        if (strncmp(g_input_buf, "/evolve ", 8) != 0) return;
+    }
 char goal[2048] = {0};
 strncpy(goal, g_input_buf + 8, sizeof(goal) - 1);
 const char *home = getenv("HOME");
