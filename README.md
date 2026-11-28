@@ -1,8 +1,9 @@
-Testing results:
+<i>Testing results:
 1. i really like that model running there is x2 faster than in other apps, esp DSH (via llama.cpp local server). It would be great to reproduce Deepseek harness here. 
-2. self-improvement really works, but i've connected a very powerful and large model to it (not tested with small models yet)-the Deepseek V4.1 Flash 1017 in Q2_K quality (230Gb Ram). [View Result ver 1.8-1.9](self-improve.txt)
+2. self-improvement really works, but i've connected a very powerful and large model to it (not tested with small models yet)-the Deepseek V4.1 Flash 1017 in Q2_K quality (230Gb Ram). Also in model it require a big context size because it fully copied the current source code and after analyzing it adding changes to it, everything need to fit, i'm using a huge context like 230K by default, not tested the exact sizes [View Result ver 1.8-1.9](self-improve.txt)
 3. i'm naming self-improvement function "Ai tree architecture", which is really random and unpredictable, you growing your own Ai from scratch, it's also hard to revert back all successed improvements.
 4. We need to be concentrated on 2 main goals - keeping code size small as possible and in self-improvement would be great to offer user 3 random improving ways (branches of "Ai tree").
+5. more maintenance tests planned.</i>
 
 
 # Goose_AI 🦢⚡
