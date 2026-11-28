@@ -1,8 +1,15 @@
+Testing results:
+1. i really like that model running there is x2 faster than in other apps, esp DSH (via llama.cpp local server). It would be great to reproduce Deepseek harness here. 
+2. self-improvement really works, but i've connected a very powerful and large model to it (not tested with small models yet)-the Deepseek V4.1 Flash 1017 in Q2_K quality (230Gb Ram). [View Result](self-improve.txt)
+3. i'm naming self-improvement function "Ai tree architecture", which is really random and unpredictable, you growing your own Ai from scratch, it's also hard to revert back all successed improvements.
+4. We need to be concentrated on 2 main goals - keeping code size small as possible and in self-improvement would be great to offer user 3 random improving ways (branches of "Ai tree").
+
+
 # Goose_AI 🦢⚡
 
 **A zero-heap, self-evolving local terminal AI assistant (`goose_ai`) written in the [Goose](https://aardappel.github.io/goose/) systems language and C.**
 
-Built for high-memory Linux workstations and multi-core Xeon / CUDA hybrid servers running local models completely offline—with zero Python, zero PyTorch, and zero runtime bloat.
+Built for Linux servers running local models completely offline—with zero Python, zero PyTorch, and zero runtime bloat.
 
 ---
 
@@ -20,9 +27,16 @@ Built for high-memory Linux workstations and multi-core Xeon / CUDA hybrid serve
 │                    Local llama-server / Ollama                       │
 └──────────────────────────────────────────────────────────────────────┘
 ```
-* **goose_ai.goose: Manages control flow, command routing, diagnostics dispatch, and the zero-heap terminal UI.**
-* **ai_bridge.c: Provides a native Goose u8[:] C FFI bridge, libcurl SSE streaming, a 16-turn sliding context window, binary session persistence, tool helpers, hardware telemetry, and live execv() hot-swapping.**
-* **Local Backend: Connects via OpenAI-compatible SSE HTTP to llama-server (default http://127.0.0) or Ollama (11434).**
+## 🌱 The AI Tree Architecture
+
+Unlike static AI wrappers, **`goose_ai`** is built as a **living, self-improving tree architecture**:
+- **Immutable Roots (`ai_bridge.c` + Static BSS):** Bounded zero-heap memory (`MAX_HISTORY = 16`) that anchors the runtime so self-modification never corrupts core state.
+- **Recursive Trunk (`/evolve` + `execv()`):** Reads its own source, generates new features via your local LLM, verifies compilation with `goose + gcc -O3` (rolling back automatically on error), and hot-swaps into the upgraded binary live.
+- **Unbounded Canopy:** Every `/evolve` command grows new branches—you don't know ahead of time what tools or capabilities your binary will grow into next.
+
+* **goose_ai.goose:** Manages control flow, command routing, diagnostics dispatch, and the zero-heap terminal UI.
+* **ai_bridge.c:** Provides a native Goose u8[:] C FFI bridge, libcurl SSE streaming, a 16-turn sliding context window, binary session persistence, tool helpers, hardware telemetry, and live execv() hot-swapping.
+* **Local Backend:** Connects via OpenAI-compatible SSE HTTP to llama-server (default http://127.0.0) or Ollama (11434).
 ---
 
 ## Key Features
