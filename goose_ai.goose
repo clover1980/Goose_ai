@@ -20,6 +20,9 @@ extern fn read_user_prompt() -> i32;
 extern fn is_quit_cmd() -> i32;
 extern fn is_health_cmd() -> i32;
 extern fn is_evolve_cmd() -> i32;
+extern fn self_evolve(endpoint: const u8[:], model_name: const u8[:]);
+extern fn is_revert_cmd() -> i32;
+extern fn revert_evolve();
 extern fn input_starts_with(prefix: const u8[:]) -> i32;
 extern fn prepare_file_prompt(question: const u8[:]);
 extern fn prepare_exec_prompt(question: const u8[:]);
@@ -28,7 +31,6 @@ extern fn input_equals(cmd: const u8[:]) -> i32;
 extern fn prepare_diag_prompt(diag_type: const u8[:], question: const u8[:]);
 extern fn build_health_prompt();
 extern fn query_local_llm(endpoint: const u8[:], model_name: const u8[:]);
-extern fn self_evolve(endpoint: const u8[:], model_name: const u8[:]);
 
 fn main() {
     load_system_prompt();
@@ -84,6 +86,10 @@ fn main() {
         }
         if is_evolve_cmd() == 1 {
             self_evolve(endpoint, model);
+            continue;
+        }
+        if is_revert_cmd() == 1 {
+            revert_evolve();
             continue;
         }
         if is_health_cmd() == 1 {
