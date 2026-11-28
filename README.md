@@ -37,7 +37,7 @@ Unlike static AI wrappers, **`goose_ai`** is built as a **living, self-improving
 
 * **goose_ai.goose:** Manages control flow, command routing, diagnostics dispatch, and the zero-heap terminal UI.
 * **ai_bridge.c:** Provides a native Goose u8[:] C FFI bridge, libcurl SSE streaming, a 16-turn sliding context window, binary session persistence, tool helpers, hardware telemetry, and live execv() hot-swapping.
-* **Local Backend:** Connects via OpenAI-compatible SSE HTTP to llama-server (default http://127.0.0) or Ollama (11434).
+* **Local Backend:** Connects via OpenAI-compatible SSE HTTP to llama-server (default http://127.0.0.1:9931) or Ollama (11434).
 ---
 
 ## Key Features
@@ -67,19 +67,19 @@ Installation & Build Guide (Ubuntu / Linux)
     sudo apt update
     sudo apt install -y build-essential libc6-dev gcc libgomp1 libcurl4-openssl-dev git
 ### 2. Install the Goose Compiler
-##### Download the latest Linux x64 prebuilt release of the Goose programming language (aardappel/goose), extract it into ~/goose, and add it to your PATH:
+##### Download the latest Linux x64 prebuilt release of the Goose programming language (aardappel/goose/releases), extract it into ~/goose, and add it to your PATH:
     mkdir -p ~/goose
     cd ~/Downloads
     wget github.com
     tar -xzf goose-linux-x64.tar.gz -C ~/goose --strip-components=1
-    echo 'export PATH="HOME/goose:PATH"' >> ~/.bashrc
+    echo 'export PATH="$HOME/goose:$PATH"' >> ~/.bashrc
     source ~/.bashrc
 (Note: If the release archive filename on the GitHub Releases page includes a version tag, adjust the wget and tar filename accordingly).
 ##### Verify that goose is working:
     goose --version
 ### 3. Clone goose_ai and Stage Working Files
 ##### Clone the repository and copy goose_ai.goose and ai_bridge.c into your home directory (~), where /evolve expects them during live self-modification:
-    git clone github.com ~/goose_ai
+    git clone https://github.com ~/goose_ai
     cp ~/goose_ai/goose_ai.goose ~/goose_ai/ai_bridge.c ~
 ### 4. Transpile Goose to C and Compile
 ##### Use goose --standalone to generate a self-contained C file (goose_ai.c), compile both C translation units with gcc -O3, and link them into ./goose_ai_bin:
@@ -91,15 +91,14 @@ Installation & Build Guide (Ubuntu / Linux)
 (Why goose_ai_bin? Naming the executable goose_ai_bin avoids colliding with the ~/goose_ai repository directory).
 ### 5. Start Your Local LLM Server & Launch goose_ai_bin
 ##### Start llama-server on port 9931 (or update the endpoint URL in ~/goose_ai.goose to match your port/host, such as 11434 for Ollama, and re-run Step 4):
-    llama-server -m /path/to/your-model.gguf --host 127.0.0.1 --port 9931 --alias local-model -c 8192 -ngl 99
+    llama-server -m /path/to/your-model.gguf --host 127.0.0.1 --port 9931 --alias local-model -c 16384 -ngl 99 
+   (the context here is 16384, better to have 32768 or more if your hardware allows)
 ##### In another terminal, launch goose_ai_bin:
     cd ~
     ./goose_ai_bin
 
 ### Quick Test in ./goose_ai_bin
-
 ##### Start ./goose_ai_bin and run an evolution to hook up the new helpers:
-    bash
     ./goose_ai_bin
 
 ##### Then inside the prompt, enter:
